@@ -1,0 +1,143 @@
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wellness Self Assessment Feedback Submission</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <!-- For Chart.js -->
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; }
+        .container { width: 80%; margin: auto; }
+        #barChart, #radarChart { width: 100%; max-width: 600px; margin: auto; }
+        .conditional-text { font-size: 1.2em; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Wellness Self Assessment Feedback</h1>
+        
+        <!-- Bar Chart -->
+        <h2>Bar Chart</h2>
+        <canvas id="barChart"></canvas>
+
+        <!-- Radar Chart -->
+        <h2>Radar Chart</h2>
+        <canvas id="radarChart"></canvas>
+
+        <!-- Conditional Text Based on Max/Min Calculation -->
+        <div class="conditional-text" id="conditionalText"></div>
+    </div>
+
+    <script>
+        // Personal Access Token and Airtable Base details
+        const AIRTABLE_PAT = 'patMZLSLnqTEdsTci.f11a67b4e5fc0c532c2de401de0044929a5d761c37c2d7310a1c3b6f162b562d';
+        const BASE_ID = 'appHMxiTMUH3oWxlW';
+        const TABLE_NAME = 'Assessment';
+
+        // Function to fetch data from Airtable
+        async function fetchDataFromAirtable() {
+            const url = `https://api.airtable.com/v0/${appHMxiTMUH3oWxlW}/${Assessment}`;
+            const response = await fetch(url, {
+                headers: {
+                    "Authorization": `Bearer ${AIRTABLE_PAT}`
+                }
+            });
+            const data = await response.json();
+            return data.records;
+        }
+
+        // Function to process data and update the charts
+        async function updateCharts() {
+            const records = await fetchDataFromAirtable();
+            
+            // Assuming the data is in the following fields of Airtable: 'Emotional', 'Financial', etc.
+            const labels = ['Emotional', 'Financial', 'Social', 'Spiritual', 'Occupation', 'Physical', 'Mental', 'Environmental'];
+            const values = [];
+
+            records.forEach(record => {
+                // Assuming the fields match the categories
+                values.push([
+                    record.fields.Emotional,
+                    record.fields.Financial,
+                    record.fields.Social,
+                    record.fields.Spiritual,
+                    record.fields.Occupation,
+                    record.fields.Physical,
+                    record.fields.Mental,
+                    record.fields.Environmental
+                ]);
+            });
+
+            // Aggregate values if necessary
+            const aggregatedValues = values[0] || [65, 59, 80, 81, 65, 59, 80, 81];  // Example fallback if no data
+
+            // Bar Chart Data
+            const barChartData = {
+                labels: labels,
+                datasets: [{
+                    label: 'Values',
+                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    data: aggregatedValues
+                }]
+            };
+
+            // Create Bar Chart
+            const barChartCtx = document.getElementById('barChart').getContext('2d');
+            new Chart(barChartCtx, {
+                type: 'bar',
+                data: barChartData,
+                options: {
+                    scales: {
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+
+            // Radar Chart Data
+            const radarChartData = {
+                labels: labels,
+                datasets: [{
+                    label: 'Performance',
+                    data: aggregatedValues,
+                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                    borderColor: 'rgba(153, 102, 255, 1)'
+                }]
+            };
+
+            // Create Radar Chart
+            const radarChartCtx = document.getElementById('radarChart').getContext('2d');
+            new Chart(radarChartCtx, {
+                type: 'radar',
+                data: radarChartData,
+                options: {
+                    scales: {
+                        r: { beginAtZero: true }
+                    }
+                }
+            });
+
+            // Conditional Text Based on Max/Min Values from the Survey Results
+            const maxValue = Math.max(...aggregatedValues);
+            const minValue = Math.min(...aggregatedValues);
+            const conditionalText = document.getElementById('conditionalText');
+
+            if (maxValue > 80) {
+                conditionalText.innerHTML = "Warning: High Value Detected!";
+                conditionalText.style.color = 'red';
+            } else if (minValue < 20) {
+                conditionalText.innerHTML = "Low Value Alert!";
+                conditionalText.style.color = 'orange';
+            } else {
+                conditionalText.innerHTML = "Values are within normal range.";
+                conditionalText.style.color = 'green';
+            }
+        }
+
+        // Run the function to update charts
+        updateCharts();
+    </script>
+</body>
+</html>
